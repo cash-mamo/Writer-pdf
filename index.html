@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Notice Generator (A4 Ready)</title>
+    
+    <!-- Google Fonts: Hind Siliguri -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- html2pdf.js for PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        /* --- CSS কোড শুরু --- */
+        :root {
+            --primary-color: #0d47a1;
+            --secondary-color: #1976d2;
+            --background-color: #eef2f7;
+            --form-bg-color: #ffffff;
+            --paper-bg-color: #ffffff;
+            --text-color: #212121;
+            --border-color: #cfd8dc;
+            --shadow-light: rgba(0, 0, 0, 0.05);
+            --shadow-dark: rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Hind Siliguri', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            padding: 2rem;
+        }
+
+        .main-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 2rem;
+            width: 100%;
+            max-width: 1600px;
+            margin: auto;
+        }
+
+        .editor-panel {
+            background: var(--form-bg-color);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px var(--shadow-light);
+            height: fit-content;
+        }
+
+        .preview-panel {
+            padding: 2rem;
+            background: var(--background-color); /* The background that the 'paper' sits on */
+        }
+        
+        .panel-title {
+            font-size: 1.6rem;
+            color: var(--secondary-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #455a64;
+        }
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            font-family: 'Hind Siliguri', sans-serif;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.15);
+        }
+        textarea.form-control {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        /* --- A4 Paper Simulation --- */
+        #notice-preview-wrapper {
+            overflow-y: auto;
+            max-height: 80vh; /* Make the panel scrollable, not the paper */
+        }
+        
+        .a4-sheet {
+            background: var(--paper-bg-color);
+            width: 21cm;
+            min-height: 29.7cm;
+            margin: 0 auto;
+            padding: 1in; /* Standard margins */
+            box-shadow: 0 5px 20px var(--shadow-dark);
+            line-height: 1.8;
+            font-size: 16px;
+        }
+
+        /* Notice Content Styling */
+        .preview-header { text-align: center; }
+        #preview-org-name { font-size: 1.6em; font-weight: bold; color: #1a237e; }
+        #preview-notice-type { font-size: 1.3em; font-weight: 600; text-decoration: underline; margin: 1.5rem 0; }
+        .preview-meta { display: flex; justify-content: space-between; margin-bottom: 1.5rem; font-weight: 500; }
+        .preview-subject-line { margin-bottom: 1.5rem; }
+        #preview-body { white-space: pre-wrap; word-wrap: break-word; text-align: justify; }
+        .preview-signature { margin-top: 4in; /* Pushes signature towards bottom */ text-align: left; }
+        #preview-approver { font-weight: bold; }
+
+        .controls {
+            grid-column: 1 / -1; /* Span across both columns */
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        .btn {
+            padding: 0.8rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .btn i { font-size: 1.1em; }
+        .btn-download { background-color: #2e7d32; }
+        .btn-download:hover { background-color: #1b5e20; }
+        .btn-print { background-color: #0277bd; }
+        .btn-print:hover { background-color: #01579b; }
+        .btn:disabled { background-color: #9e9e9e; cursor: not-allowed; }
+
+        /* --- Print Specific CSS --- */
+        @media print {
+            body {
+                padding: 0;
+                margin: 0;
+                background-color: #fff;
+            }
+            /* Hide everything except the printable area */
+            body * {
+                visibility: hidden;
+            }
+            .a4-sheet, .a4-sheet * {
+                visibility: visible;
+            }
+            .a4-sheet {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: auto;
+                margin: 0;
+                padding: 0; /* Browser adds margins */
+                box-shadow: none;
+                border: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1 class="main-title">A4 রেডি নোটিশ জেনারেটর</h1>
+
+    <div class="app-container">
+        <div class="editor-panel">
+            <h2 class="panel-title">নোটিশের তথ্য</h2>
+            <form id="notice-form">
+                <div class="form-group"><label for="org-name">প্রতিষ্ঠানের নাম</label><input type="text" id="org-name" class="form-control" placeholder="যেমন: গুগল বাংলাদেশ"></div>
+                <div class="form-group"><label for="notice-type">নোটিশের ধরণ</label><input type="text" id="notice-type" class="form-control" value="বিজ্ঞপ্তি"></div>
+                <div class="form-group"><label for="ref-no">স্মারক নং</label><input type="text" id="ref-no" class="form-control" placeholder="যেমন: গবি/প্রশা/২০২৫/১"></div>
+                <div class="form-group"><label for="notice-date">তারিখ</label><input type="text" id="notice-date" class="form-control"></div>
+                <div class="form-group"><label for="subject">বিষয়</label><input type="text" id="subject" class="form-control" placeholder="নোটিশের বিষয় লিখুন"></div>
+                <div class="form-group"><label for="body-content">মূল অংশ</label><textarea id="body-content" class="form-control" placeholder="এখানে নোটিশের বিস্তারিত লিখুন..."></textarea></div>
+                <div class="form-group"><label for="approver-name">অনুমোদনকারী</label><input type="text" id="approver-name" class="form-control" placeholder="নাম"></div>
+                <div class="form-group"><label for="approver-designation">পদবি</label><input type="text" id="approver-designation" class="form-control" placeholder="পদবি"></div>
+            </form>
+        </div>
+        
+        <div class="preview-panel">
+            <h2 class="panel-title">লাইভ প্রিভিউ (A4 সাইজ)</h2>
+            <div id="notice-preview-wrapper">
+                <div id="notice-preview" class="a4-sheet">
+                    <div class="preview-header">
+                        <div id="preview-org-name"></div>
+                        <div id="preview-notice-type"></div>
+                    </div>
+                    <div class="preview-meta">
+                        <div id="preview-ref-no"></div>
+                        <div id="preview-date"></div>
+                    </div>
+                    <div class="preview-subject-line"><strong>বিষয়:</strong> <span id="preview-subject"></span></div>
+                    <div id="preview-body"></div>
+                    <div class="preview-signature">
+                        <div id="preview-approver"></div>
+                        <div id="preview-designation"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="download-btn" class="btn btn-download"><i class="fas fa-file-pdf"></i>ডাউনলোড (PDF)</button>
+            <button id="print-btn" class="btn btn-print"><i class="fas fa-print"></i>প্রিন্ট করুন</button>
+        </div>
+    </div>
+
+    <script>
+    // --- JavaScript কোড শুরু ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('notice-form');
+
+        // তারিখ ফিল্ডে আজকের তারিখ সেট করা
+        const dateField = document.getElementById('notice-date');
+        const today = new Date();
+        const day = String(today.getDate()).padStart(2, '0');
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const year = today.getFullYear();
+        dateField.value = `${day}/${month}/${year}`;
+
+        // প্রিভিউ আপডেট করার ফাংশন
+        const updatePreview = () => {
+            document.getElementById('preview-org-name').innerText = document.getElementById('org-name').value || 'প্রতিষ্ঠানের নাম';
+            document.getElementById('preview-notice-type').innerText = document.getElementById('notice-type').value || 'বিজ্ঞপ্তি';
+            document.getElementById('preview-ref-no').innerText = document.getElementById('ref-no').value ? `স্মারক নং: ${document.getElementById('ref-no').value}` : 'স্মারক নং:';
+            document.getElementById('preview-date').innerText = document.getElementById('notice-date').value ? `তারিখ: ${document.getElementById('notice-date').value}` : 'তারিখ:';
+            document.getElementById('preview-subject').innerText = document.getElementById('subject').value || '...';
+            document.getElementById('preview-body').innerText = document.getElementById('body-content').value || 'নোটিশের মূল অংশ এখানে প্রদর্শিত হবে...';
+            document.getElementById('preview-approver').innerText = document.getElementById('approver-name').value || '(অনুমোদনকারীর নাম)';
+            document.getElementById('preview-designation').innerText = document.getElementById('approver-designation').value || '(পদবি)';
+        };
+
+        // ফর্মের যেকোনো ইনপুটে পরিবর্তন হলেই প্রিভিউ আপডেট হবে
+        form.addEventListener('input', updatePreview);
+
+        // পেজ লোড হওয়ার সাথে সাথে একবার প্রিভিউ আপডেট করা
+        updatePreview();
+
+        // বাটন ফাংশনালিটি
+        const downloadBtn = document.getElementById('download-btn');
+        const printBtn = document.getElementById('print-btn');
+
+        // PDF ডাউনলোড
+        downloadBtn.addEventListener('click', () => {
+            if (!document.getElementById('body-content').value.trim()) {
+                alert('অনুগ্রহ করে নোটিশের মূল অংশ লিখুন।');
+                return;
+            }
+
+            const element = document.getElementById('notice-preview');
+            const originalButtonText = downloadBtn.innerHTML;
+            downloadBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ডাউনলোড হচ্ছে...`;
+            downloadBtn.disabled = true;
+
+            const options = {
+                margin:       1, // inch
+                filename:     `notice_${Date.now()}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(options).from(element).save().finally(() => {
+                downloadBtn.innerHTML = originalButtonText;
+                downloadBtn.disabled = false;
+            });
+        });
+        
+        // প্রিন্ট ফাংশন
+        printBtn.addEventListener('click', () => {
+            if (!document.getElementById('body-content').value.trim()) {
+                alert('অনুগ্রহ করে নোটিশের মূল অংশ লিখুন।');
+                return;
+            }
+            window.print();
+        });
+    });
+    </script>
+
+</body>
+</html>
